@@ -1,0 +1,14 @@
+{{- if .Values.DisallowedRepositories.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowedRepos
+metadata:
+  name: disallowed-repo-list
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    repos:
+      {{ .Values.DisallowedRepositories.repos | toYaml | nindent 6 }}
+{{- end -}}

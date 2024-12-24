@@ -1,0 +1,13 @@
+{{- if .Values.SvcLoadbalancerAnnotations.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sSvcLbRequiredAnnotations
+metadata:
+  name: svc-lb-required-annotations
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+  parameters:
+    cloudOrigin: {{ .Values.global.cloudOrigin }}
+{{- end -}}

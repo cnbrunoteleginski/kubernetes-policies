@@ -1,0 +1,17 @@
+{{- if .Values.HorizontalPodAutoscaler.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sHorizontalPodAutoscaler
+metadata:
+  name: horizontal-pod-autoscaler
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: ["autoscaling"]
+        kinds: ["HorizontalPodAutoscaler"]
+  parameters:
+    minimumReplicaSpread: {{ .Values.HorizontalPodAutoscaler.minimumReplicaSpread }}
+    enforceScaleTargetRef: {{ .Values.HorizontalPodAutoscaler.enforceScaleTargetRef }}
+    ranges:
+      {{ .Values.HorizontalPodAutoscaler.ranges | toYaml | nindent 6 }}
+{{- end -}}

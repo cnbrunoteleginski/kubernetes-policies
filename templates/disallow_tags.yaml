@@ -1,0 +1,18 @@
+{{- if .Values.DisallowTags.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowedTags
+metadata:
+  name: container-image-must-not-have-listed-tags
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - "default"
+  parameters:
+    tags: 
+      {{ .Values.DisallowTags.tags | toYaml | nindent 6 }}
+    exemptImages: 
+      {{ .Values.DisallowTags.exemptImages | toYaml | nindent 6 }}
+{{- end -}}

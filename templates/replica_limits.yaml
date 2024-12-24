@@ -1,0 +1,14 @@
+{{- if .Values.ReplicaLimits.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sReplicaLimits
+metadata:
+  name: replica-limits
+spec:
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment"]
+  parameters:
+    ranges:
+      {{ .Values.ReplicaLimits.ranges | toYaml | nindent 6 }}
+{{- end -}}

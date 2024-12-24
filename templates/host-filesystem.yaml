@@ -1,0 +1,14 @@
+{{- if .Values.hostFilesystem.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPHostFilesystem
+metadata:
+  name: psp-host-filesystem
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    allowedHostPaths:
+      {{ .Values.hostFilesystem.allowedHostPaths | toYaml | nindent 6 }}
+{{- end -}}

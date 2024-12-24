@@ -1,0 +1,16 @@
+{{- if .Values.allowedRepositories.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRepos
+metadata:
+  name: allowed-repos
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - "default"
+  parameters:
+    repos:
+      {{ .Values.allowedRepositories.repos | toYaml | nindent 6 }}
+{{- end -}}

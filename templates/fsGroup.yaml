@@ -1,0 +1,16 @@
+{{ if .Values.fsGroup.enabled }}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPFSGroup
+metadata:
+  name: psp-fsgroup
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    rule: 
+      {{ .Values.fsGroup.rule | toYaml | nindent 6}}
+    ranges:
+      {{ .Values.fsGroup.ranges | toYaml | nindent 6}}
+{{- end -}}

@@ -1,0 +1,16 @@
+{{- if .Values.RequiredProbes.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredProbes
+metadata:
+  name: must-have-probes
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    probes: 
+      {{ .Values.RequiredProbes.probes | toYaml | nindent 6 }}
+    probeTypes:
+      {{ .Values.RequiredProbes.probeTypes | toYaml | nindent 6 }}
+{{- end -}}

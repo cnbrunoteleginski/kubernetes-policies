@@ -1,0 +1,14 @@
+{{- if .Values.ExternalIps.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sExternalIPs
+metadata:
+  name: allowed-external-ips
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+  parameters:
+    allowedIPs:
+      {{ .Values.ExternalIps.allowedIPs | toYaml | nindent 6 }}
+{{- end -}}

@@ -1,0 +1,95 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8ssvclbrequiredannotations
+  annotations:
+    metadata.gatekeeper.sh/title: "Loadbalancer service required annotations"
+    metadata.gatekeeper.sh/version: 1.0.0
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sSvcLbRequiredAnnotations
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            cloudOrigin:
+              type: string
+              enum: ["azure", "aws", "gcp", "alibaba", "digitalocean", "oci", "openstack", "ibmcloud"]
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8ssvclbrequiredannotations
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "azure"
+            not input.review.object.metadata.annotations["service.beta.kubernetes.io/azure-load-balancer-internal"] == "true"
+            msg := "The cloud is Azure. The annotation 'azure-load-balancer-internal' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "aws"
+            not input.review.object.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"] == "true"
+            msg := "The cloud is AWS. The annotation 'aws-load-balancer-internal' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "gcp"
+            not input.review.object.metadata.annotations["cloud.google.com/load-balancer-type"] == "true"
+            msg := "The cloud is GCP. The annotation 'cloud.google.com/load-balancer-type' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "alibaba"
+            not input.review.object.metadata.annotations["service.beta.kubernetes.io/alicloud-load-balancer-address-type"] == "true"
+            msg := "The cloud is Alibaba Cloud. The annotation 'service.beta.kubernetes.io/alicloud-load-balancer-address-type' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "digitalocean"
+            not input.review.object.metadata.annotations["service.beta.kubernetes.io/do-loadbalancer-hostname"] == "true"
+            msg := "The cloud is DigitalOcean. The annotation 'service.beta.kubernetes.io/do-loadbalancer-hostname' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "oci"
+            not input.review.object.metadata.annotations["service.beta.kubernetes.io/oci-load-balancer-internal"] == "true"
+            msg := "The cloud is OCI. The annotation 'service.beta.kubernetes.io/oci-load-balancer-internal' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "openstack"
+            not input.review.object.metadata.annotations["loadbalancer.openstack.org/internal"] == "true"
+            msg := "The cloud is OpenStack. The annotations 'loadbalancer.openstack.org/floating-network-id' and 'loadbalancer.openstack.org/internal' must be set to 'true'."
+        }
+
+        violation[{"msg": msg}] {
+            input.review.kind.kind == "Service"
+            cloudOrigin := input.parameters.cloudOrigin
+            input.review.object.spec.type == "LoadBalancer"
+            cloudOrigin == "ibmcloud"
+            not input.review.object.metadata.annotations["service.kubernetes.io/ibm-load-balancer-cloud-provider-ip-type"] == "true"
+            msg := "The cloud is IBM Cloud. The annotation 'service.kubernetes.io/ibm-load-balancer-cloud-provider-ip-type' must be set to 'true'."
+        }

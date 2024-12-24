@@ -1,0 +1,10 @@
+{{- if .Values.PodDisruptionBudget.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPodDisruptionBudget
+metadata:
+  name: pod-distruption-budget
+spec:
+  match:
+    kinds:
+      {{ .Values.PodDisruptionBudget.kinds | toYaml | nindent 6 }}
+{{- end -}}

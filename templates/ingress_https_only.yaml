@@ -1,0 +1,15 @@
+{{- if .Values.IngressHttpsOnly.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sHttpsOnly
+metadata:
+  name: ingress-https-only-tls-optional
+spec:
+  match:
+    kinds:
+      - apiGroups: ["extensions", "networking.k8s.io"]
+        kinds: ["Ingress"]
+  parameters:
+    tlsOptional:
+      {{ .Values.IngressHttpsOnly.tlsOptional | toYaml | nindent 6 }}
+{{- end -}}
+

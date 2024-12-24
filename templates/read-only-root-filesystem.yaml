@@ -1,0 +1,14 @@
+{{- if .Values.readOnlyRootFilesystem.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPReadOnlyRootFilesystem
+metadata:
+  name: psp-readonlyrootfilesystem
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    exemptImages:
+      {{ .Values.readOnlyRootFilesystem.exemptImages | toYaml | nindent 6 }}
+{{- end -}}

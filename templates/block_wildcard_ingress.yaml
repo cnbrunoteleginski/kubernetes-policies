@@ -1,0 +1,11 @@
+{{- if .Values.BlockWildcardIngress.enabled -}}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sBlockWildcardIngress
+metadata:
+  name: block-wildcard-ingress
+spec:
+  match:
+    kinds:
+      - apiGroups: ["extensions", "networking.k8s.io"]
+        kinds: ["Ingress"]
+{{- end -}}
