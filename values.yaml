@@ -95,6 +95,10 @@ StorageClass:
 SvcLoadbalancerAnnotations:
   enabled: true
 
+DisallowRoot:
+  enabled: true
+  exemptImages: []
+
 # https://open-policy-agent.github.io/gatekeeper-library/website/validation/fsgroup
 fsGroup:
   enabled: false

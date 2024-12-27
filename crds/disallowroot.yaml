@@ -1,0 +1,94 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8svalidaterunasnonroot
+  annotations:
+    metadata.gatekeeper.sh/title: "Disallow run container as root"
+    metadata.gatekeeper.sh/version: 1.1.0
+    description: >-
+      Controls containers to run as root.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sValidateRunAsNonRoot
+      validation:
+        openAPIV3Schema:
+          type: object
+          description: >-
+            Controls containers to run as root.
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement.
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      code:
+      - engine: Rego
+        source:
+          rego: |
+            package k8svalidaterunasnonroot
+
+            import data.lib.exclude_update.is_update
+            import data.lib.exempt_container.is_exempt
+
+            violation[{"msg": msg, "details": {}}] {
+                # spec.containers.securityContext.runAsNonRoot field is immutable.
+                not is_update(input.review)
+
+                c := input_containers[_]
+                not is_exempt(c)
+                input_allow_privilege_escalation(c)
+                msg := sprintf("Containers must not run as root. Change the 'containers.securityContext.runAsNonRoot' to true: %v on image %v", [c.name, c.image])
+            }
+
+            input_allow_privilege_escalation(c) {
+                not has_field(c, "securityContext")
+            }
+            input_allow_privilege_escalation(c) {
+                not c.securityContext.runAsNonRoot == true
+            }
+            input_containers[c] {
+                c := input.review.object.spec.containers[_]
+            }
+            input_containers[c] {
+                c := input.review.object.spec.initContainers[_]
+            }
+            input_containers[c] {
+                c := input.review.object.spec.ephemeralContainers[_]
+            }
+            # has_field returns whether an object has a field
+            has_field(object, field) = true {
+                object[field]
+            }
+          libs:
+          - |
+            package lib.exclude_update
+
+            is_update(review) {
+                review.operation == "UPDATE"
+            }
+          - |
+            package lib.exempt_container
+
+            is_exempt(container) {
+                exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+                img := container.image
+                exemption := exempt_images[_]
+                _matches_exemption(img, exemption)
+            }
+
+            _matches_exemption(img, exemption) {
+                not endswith(exemption, "*")
+                exemption == img
+            }
+
+            _matches_exemption(img, exemption) {
+                endswith(exemption, "*")
+                prefix := trim_suffix(exemption, "*")
+                startswith(img, prefix)
+            }
