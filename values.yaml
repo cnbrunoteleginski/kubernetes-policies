@@ -33,6 +33,7 @@ readOnlyRootFilesystem:
 allowedRepositories:
   enabled: true
   repos: ["registry.k8s.io/", "nginx"]
+  excludedNamespaces: ["kube-system"]
 
 # https://open-policy-agent.github.io/gatekeeper-library/website/validation/automount-serviceaccount-token
 automountServiceAccountTokenForPod:
@@ -174,3 +175,88 @@ RequiredLabels:
   labels:
     - key: owner
       allowedRegex: "^[a-zA-Z]+.agilebank.demo$"
+
+# Falco is a cloud native security tool that provides runtime security across hosts, containers, Kubernetes, and cloud environments. It leverages custom rules on Linux kernel events and other data sources through plugins, enriching event data with contextual metadata to deliver real-time alerts. Falco enables the detection of abnormal behavior, potential security threats, and compliance violations.
+falco:
+  containerSecurityContext: {}
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+
+  # Collectors for data enrichment (scenario requirement)
+  collectors:
+    enabled: true
+    
+    docker:
+      enabled: false
+
+    crio:
+      enabled: false
+
+    containerd:
+      enabled: true
+      socket: /var/run/containerd/containerd.sock
+
+  customRules:
+    override-rules.yaml: |-
+
+      - list: known_namespaces_privilege_containers_list
+        items: ["falco", "kube-system"]
+
+      - macro: known_namespaces_privilege_containers
+        condition: (k8s.ns.name in (known_namespaces_privilege_containers_list))
+
+      - rule: Fileless execution via memfd_create
+        desc: >
+          Detect if a binary is executed from memory using the memfd_create technique. This is a well-known defense evasion 
+          technique for executing malware on a victim machine without storing the payload on disk and to avoid leaving traces 
+          about what has been executed.
+        condition: >
+          spawned_process
+          and proc.is_exe_from_memfd=true
+          and proc.sname != containerd
+        output: (CUSTOM) Fileless execution via memfd_create (container_start_ts=%container.start_ts proc_cwd=%proc.cwd evt_res=%evt.res proc_sname=%proc.sname gparent=%proc.aname[2] evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
+        priority: CRITICAL
+        tags: [maturity_stable, host, container, process, mitre_defense_evasion, T1620]
+
+      - rule: Container running in Privileged mode
+        desc: > 
+          Detect containers running in privilege mode.
+        condition: >
+          spawned_process
+          and container
+          and container.privileged=true
+          and not known_namespaces_privilege_containers
+        output: Privileged container has been started! (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags ns=%k8s.ns.name %container.info)
+        priority: CRITICAL
+        tags: [maturity_stable, container, cis, process, mitre_privilege_escalation, T1611]
+
+  # UI to visualise threats alerts
+  falcosidekick:
+    enabled: true
+    webui: 
+      enabled: true
+
+  serviceMonitor:
+    create: false
+    path: /metrics
+    labels: {}
+    selector: {}
+    interval: 15s
+    scheme: http
+    tlsConfig: {}
+    scrapeTimeout: 10s
+    relabelings: []
+    targetLabels: []
+    endpointPort: "metrics"
+
+  falco:
+    rules_files:
+      - /etc/falco/falco_rules.yaml
+      - /etc/falco/falco_rules.local.yaml
+      - /etc/falco/rules.d

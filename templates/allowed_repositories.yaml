@@ -8,8 +8,8 @@ spec:
     kinds:
       - apiGroups: [""]
         kinds: ["Pod"]
-    namespaces:
-      - "default"
+    excludedNamespaces:
+      {{ .Values.allowedRepositories.excludedNamespaces | toYaml | nindent 6 }}
   parameters:
     repos:
       {{ .Values.allowedRepositories.repos | toYaml | nindent 6 }}
